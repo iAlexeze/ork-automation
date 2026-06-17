@@ -1,0 +1,4 @@
+runtime:
+  image:
+    repository: ghcr.io/ialexeze/database-operator
+    tag: latest

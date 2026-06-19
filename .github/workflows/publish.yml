@@ -25,5 +25,5 @@ jobs:
           registry-push: "webapp-operator:${{ github.ref_name }} ."
           registry-url: "ghcr.io/${{ env.OWNER }}/katalogs"
           registry-username: ${{ github.actor }}
-          registry-password: ${{ secrets.ORK_ACTION }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
           working-directory: ./webapp-operator

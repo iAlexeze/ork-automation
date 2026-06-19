@@ -33,6 +33,7 @@ jobs:
       - name: Build custom ork (full CLI)
         working-directory: database-operator
         run: |
+          go mod tidy
           go build \
             -ldflags "-X github.com/orkspace/orkestra/pkg/version.Version=${{ github.ref_name }}" \
             -o $HOME/.orkestra/bin/ork \
@@ -43,6 +44,7 @@ jobs:
       - name: Build runtime binary for Docker image
         working-directory: database-operator
         run: |
+          go mod tidy
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
             -tags runtime \
             -ldflags "-X github.com/orkspace/orkestra/pkg/version.Version=${{ github.ref_name }}" \
@@ -66,6 +68,9 @@ jobs:
       # 4. Same publish step as the declarative workflow — validate, simulate, push.
       #    The custom ork from step 2 is in PATH; the action uses it automatically.
       #    Katalog is published after the image — consumers pull both atomically.
+      - name: Set lowercase owner
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Publish to registry
         uses: orkspace/orkestra-action@v1
         with:

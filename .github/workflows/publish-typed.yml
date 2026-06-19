@@ -2,7 +2,6 @@ name: Publish database-operator
 
 on:
   push:
-    # tags: ["v*"]
 
 jobs:
   publish:
@@ -18,6 +17,9 @@ jobs:
         with:
           go-version-file: ./database-operator/go.mod
 
+      - name: Set lowercase owner
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       # 1. Generate pkg/typeregistry/zz_generated_typeregistry.go from katalog.yaml.
       #    Uses the standard ork installed by the action — only needs ork generate registry.
       - name: Generate runtime registry
@@ -26,25 +28,13 @@ jobs:
           generate-registry: "."
           working-directory: ./database-operator
 
-      # 2. Build the custom ork binary with the type registry compiled in.
-      #    Writes to ~/.orkestra/bin/ork — the same path install.sh uses — replacing
-      #    the standard binary the action installed in step 1. Subsequent action steps
-      #    pick up the custom binary automatically from the existing PATH entry.
-      - name: Build custom ork (full CLI)
-        working-directory: database-operator
-        run: |
-          make build
-
-      # 3. Build the production runtime binary (tags: runtime — no validate/simulate/e2e commands).
+      # 2. Build the production runtime binary (tags: runtime — no validate/simulate/e2e commands).
       #    Placed in the Docker build context so the Dockerfile can COPY it in.
       - name: Build runtime binary for Docker image
         working-directory: database-operator
         run: |
           make build-runtime
           mv $HOME/.orkestra/bin/runtime/ork ./ork
-
-      - name: Set lowercase owner
-        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Log in to ghcr.io
         uses: docker/login-action@v3
@@ -60,9 +50,16 @@ jobs:
           push: true
           tags: ghcr.io/${{ env.OWNER }}/database-operator:${{ github.ref_name }}
 
-      # 4. Same publish step as the declarative workflow — validate, simulate, push.
-      #    The custom ork from step 2 is in PATH; the action uses it automatically.
-      #    Katalog is published after the image — consumers pull both atomically.
+      # 3. Build the custom ork binary with the type registry compiled in.
+      #    Writes to ~/.orkestra/bin/ork, replacing the standard binary the action
+      #    installed in step 1. Subsequent action steps pick it up automatically.
+      - name: Build custom ork (full CLI)
+        working-directory: database-operator
+        run: make build
+
+      # 4. Validate, simulate, and push using the custom ork (type registry compiled in).
+      #    Image is already in the registry — katalog published last so consumers
+      #    always pull both atomically.
       - name: Publish to registry
         uses: orkspace/orkestra-action@v1
         with:

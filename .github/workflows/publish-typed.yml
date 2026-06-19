@@ -33,23 +33,15 @@ jobs:
       - name: Build custom ork (full CLI)
         working-directory: database-operator
         run: |
-          go mod tidy
-          go build \
-            -ldflags "-X github.com/orkspace/orkestra/pkg/version.Version=${{ github.ref_name }}" \
-            -o $HOME/.orkestra/bin/ork \
-            ./cmd/orkestra
+          make build
 
       # 3. Build the production runtime binary (tags: runtime — no validate/simulate/e2e commands).
       #    Placed in the Docker build context so the Dockerfile can COPY it in.
       - name: Build runtime binary for Docker image
         working-directory: database-operator
         run: |
-          go mod tidy
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-            -tags runtime \
-            -ldflags "-X github.com/orkspace/orkestra/pkg/version.Version=${{ github.ref_name }}" \
-            -o ./ork \
-            ./cmd/orkestra
+          make build-runtime
+          cp $HOME/.orkestra/bin/ork ./ork
 
       - name: Log in to ghcr.io
         uses: docker/login-action@v3

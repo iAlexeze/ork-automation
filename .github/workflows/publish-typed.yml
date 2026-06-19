@@ -43,12 +43,15 @@ jobs:
           make build-runtime
           cp $HOME/.orkestra/bin/ork ./ork
 
+      - name: Set lowercase owner
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Log in to ghcr.io
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.ORK_ACTION }}
+          password: ${{ secrets.ORK_ACTION_TOKEN }}
 
       - name: Build and push runtime image
         uses: docker/build-push-action@v5
@@ -60,9 +63,6 @@ jobs:
       # 4. Same publish step as the declarative workflow — validate, simulate, push.
       #    The custom ork from step 2 is in PATH; the action uses it automatically.
       #    Katalog is published after the image — consumers pull both atomically.
-      - name: Set lowercase owner
-        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
       - name: Publish to registry
         uses: orkspace/orkestra-action@v1
         with:
@@ -72,5 +72,5 @@ jobs:
           registry-push: "database-operator:${{ github.ref_name }} ."
           registry-url: "ghcr.io/${{ github.repository_owner }}/katalogs"
           registry-username: ${{ github.actor }}
-          registry-password: ${{ secrets.ORK_ACTION }}
+          registry-password: ${{ secrets.ORK_ACTION_TOKEN }}
           working-directory: ./database-operator

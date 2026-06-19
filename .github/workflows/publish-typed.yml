@@ -2,7 +2,7 @@ name: Publish database-operator
 
 on:
   push:
-    tags: ["v*"]
+    # tags: ["v*"]
 
 jobs:
   publish:
@@ -41,7 +41,7 @@ jobs:
         working-directory: database-operator
         run: |
           make build-runtime
-          cp $HOME/.orkestra/bin/ork ./ork
+          mv $HOME/.orkestra/bin/runtime/ork ./ork
 
       - name: Set lowercase owner
         run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV

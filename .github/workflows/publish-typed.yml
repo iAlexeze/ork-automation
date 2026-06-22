@@ -122,6 +122,9 @@ jobs:
         working-directory: database-operator
         run: make build
 
+      - name: Set lowercase owner
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       # Validate, simulate, and push. The image is already in the registry from
       # publish-image. Katalog is published last so consumers always pull both atomically.
       - name: Publish to registry
@@ -131,7 +134,7 @@ jobs:
           validate: "true"
           simulate: "true"
           registry-push: "database-operator:${{ github.ref_name }} ."
-          registry-url: "ghcr.io/${{ github.repository_owner }}/katalogs"
+          registry-url: "ghcr.io/${{ env.OWNER }}/katalogs"
           registry-username: ${{ github.actor }}
           registry-password: ${{ secrets.ORK_ACTION_TOKEN }}
           working-directory: ./database-operator

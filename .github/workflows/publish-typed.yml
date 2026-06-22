@@ -5,79 +5,79 @@ on:
     tags: ["v*"]
 
 jobs:
-  publish-image:
-    name: Build and push runtime image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+  # publish-image:
+  #   name: Build and push runtime image
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     packages: write
 
-    steps:
-      - uses: actions/checkout@v4
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: ./database-operator/go.mod
-          cache: true
-          cache-dependency-path: ./database-operator/go.sum
+  #     - uses: actions/setup-go@v5
+  #       with:
+  #         go-version-file: ./database-operator/go.mod
+  #         cache: true
+  #         cache-dependency-path: ./database-operator/go.sum
 
-      - name: Set lowercase owner
-        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+  #     - name: Set lowercase owner
+  #       run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      # Cache the runtime binary by source hash. On hit, the binary is ready
-      # for the Docker context without rebuilding.
-      - name: Cache runtime binary
-        id: cache-runtime
-        uses: actions/cache@v5
-        with:
-          path: database-operator/ork
-          key: runtime-binary-${{ hashFiles('database-operator/go.sum', 'database-operator/**/*.go', 'database-operator/katalog.yaml') }}
+  #     # Cache the runtime binary by source hash. On hit, the binary is ready
+  #     # for the Docker context without rebuilding.
+  #     - name: Cache runtime binary
+  #       id: cache-runtime
+  #       uses: actions/cache@v5
+  #       with:
+  #         path: database-operator/ork
+  #         key: runtime-binary-${{ hashFiles('database-operator/go.sum', 'database-operator/**/*.go', 'database-operator/katalog.yaml') }}
 
-      # Generate pkg/typeregistry/zz_generated_typeregistry.go from katalog.yaml.
-      # Only needed when rebuilding the binary.
-      - name: Generate runtime registry
-        if: steps.cache-runtime.outputs.cache-hit != 'true'
-        uses: orkspace/orkestra-action@v1
-        with:
-          generate-registry: "."
-          working-directory: ./database-operator
+  #     # Generate pkg/typeregistry/zz_generated_typeregistry.go from katalog.yaml.
+  #     # Only needed when rebuilding the binary.
+  #     - name: Generate runtime registry
+  #       if: steps.cache-runtime.outputs.cache-hit != 'true'
+  #       uses: orkspace/orkestra-action@v1
+  #       with:
+  #         generate-registry: "."
+  #         working-directory: ./database-operator
 
-      # Build the production runtime binary (tags: runtime) and place it in the
-      # Docker build context. Only the 'ork run' command is included.
-      - name: Build runtime binary
-        if: steps.cache-runtime.outputs.cache-hit != 'true'
-        working-directory: database-operator
-        run: |
-          make build-runtime
-          cp $HOME/.orkestra/bin/runtime/ork ./ork
+  #     # Build the production runtime binary (tags: runtime) and place it in the
+  #     # Docker build context. Only the 'ork run' command is included.
+  #     - name: Build runtime binary
+  #       if: steps.cache-runtime.outputs.cache-hit != 'true'
+  #       working-directory: database-operator
+  #       run: |
+  #         make build-runtime
+  #         cp $HOME/.orkestra/bin/runtime/ork ./ork
 
-      - name: Log in to ghcr.io
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.ORK_ACTION_TOKEN }}
+  #     - name: Log in to ghcr.io
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.ORK_ACTION_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
 
-      - name: Build and push runtime image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./database-operator
-          push: true
-          tags: ghcr.io/${{ env.OWNER }}/database-operator:${{ github.ref_name }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+  #     - name: Build and push runtime image
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: ./database-operator
+  #         push: true
+  #         tags: ghcr.io/${{ env.OWNER }}/database-operator:${{ github.ref_name }}
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max
 
-      - name: Remove binary from Docker context
-        working-directory: database-operator
-        run: rm -f ./ork
+  #     - name: Remove binary from Docker context
+  #       working-directory: database-operator
+  #       run: rm -f ./ork
 
   publish-pattern:
     name: Validate and publish katalog
     runs-on: ubuntu-latest
-    needs: publish-image
+  #  needs: publish-image
     permissions:
       contents: read
       packages: write
